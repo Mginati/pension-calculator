@@ -7,8 +7,6 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-chartjs-2@5.2.0/dist/index.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -207,14 +205,6 @@
             margin: 10px 0;
         }
 
-        .chart-container {
-            background: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 20px;
-            height: 400px;
-        }
-
         .info-box {
             background: #e3f2fd;
             border-right: 4px solid #2196f3;
@@ -269,7 +259,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useMemo } = React;
 
         function PensionSimulator() {
             // State for inputs
@@ -293,24 +283,25 @@
             const [feesCumulativeB, setFeesCumulativeB] = useState(0);
             const [feesDepositB, setFeesDepositB] = useState(2.0);
 
-            // Calculate derived values
-            const monthsUntilRetirement = (retirementAge - currentAge) * 12;
-            const totalContributionRate = severanceRate + employerRate + employeeRate;
-            const monthlyDeposit = grossSalary * (totalContributionRate / 100);
-            const monthlyInterestRate = Math.pow((100 + annualReturn) / 100, 1/12) - 1;
+            // Calculate derived values using useMemo
+            const monthsUntilRetirement = useMemo(() => 
+                (retirementAge - currentAge) * 12
+            , [retirementAge, currentAge]);
 
-            // Calculate future value function
-            const calculateFV = (rate, nper, pmt, pv) => {
-                if (rate === 0) return -(pv + pmt * nper);
-                const pvif = Math.pow(1 + rate, nper);
-                return -(pv * pvif + pmt * (1 + rate) * (pvif - 1) / rate);
-            };
+            const totalContributionRate = useMemo(() => 
+                severanceRate + employerRate + employeeRate
+            , [severanceRate, employerRate, employeeRate]);
 
-            // Calculate savings without fees (baseline)
-            const totalSavingsNoFees = calculateFV(monthlyInterestRate, monthsUntilRetirement, monthlyDeposit, currentSavings);
+            const monthlyDeposit = useMemo(() => 
+                grossSalary * (totalContributionRate / 100)
+            , [grossSalary, totalContributionRate]);
 
-            // Calculate fees paid for Plan A
-            const calculateFeesA = () => {
+            const monthlyInterestRate = useMemo(() => 
+                Math.pow((100 + annualReturn) / 100, 1/12) - 1
+            , [annualReturn]);
+
+            // Calculate fees paid for Plan A using useMemo
+            const planA = useMemo(() => {
                 let balance = currentSavings;
                 let totalFees = 0;
                 
@@ -332,10 +323,10 @@
                 }
                 
                 return { finalBalance: balance, totalFees };
-            };
+            }, [currentSavings, monthsUntilRetirement, monthlyDeposit, monthlyInterestRate, feesCumulativeA, feesDepositA]);
 
-            // Calculate fees paid for Plan B
-            const calculateFeesB = () => {
+            // Calculate fees paid for Plan B using useMemo
+            const planB = useMemo(() => {
                 let balance = currentSavings;
                 let totalFees = 0;
                 
@@ -357,12 +348,15 @@
                 }
                 
                 return { finalBalance: balance, totalFees };
-            };
+            }, [currentSavings, monthsUntilRetirement, monthlyDeposit, monthlyInterestRate, feesCumulativeB, feesDepositB]);
 
-            const planA = calculateFeesA();
-            const planB = calculateFeesB();
-            const difference = planB.finalBalance - planA.finalBalance;
-            const percentageDifference = (difference / planA.finalBalance) * 100;
+            const difference = useMemo(() => 
+                planB.finalBalance - planA.finalBalance
+            , [planA.finalBalance, planB.finalBalance]);
+
+            const percentageDifference = useMemo(() => 
+                (difference / planA.finalBalance) * 100
+            , [difference, planA.finalBalance]);
 
             const formatCurrency = (amount) => {
                 return new Intl.NumberFormat('he-IL', {
@@ -370,10 +364,6 @@
                     currency: 'ILS',
                     maximumFractionDigits: 0
                 }).format(amount);
-            };
-
-            const formatNumber = (num) => {
-                return new Intl.NumberFormat('he-IL').format(Math.round(num));
             };
 
             return (
