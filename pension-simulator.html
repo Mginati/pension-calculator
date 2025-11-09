@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סימולטור דמי ניהול פנסיה | MORE Insurance</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-chartjs-2@5.2.0/dist/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            direction: rtl;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .fee-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .fee-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            position: relative;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .fee-card.better {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+
+        .fee-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .fee-inputs {
+            margin-bottom: 15px;
+        }
+
+        .fee-inputs input {
+            margin-bottom: 10px;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .result-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .result-value.positive {
+            color: #10b981;
+        }
+
+        .result-value.negative {
+            color: #ef4444;
+        }
+
+        .badge {
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #10b981;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            color: #2d3436;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .big-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #2d3436;
+            margin: 10px 0;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            height: 400px;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-right: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .info-box strong {
+            color: #1976d2;
+        }
+
+        .percentage-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-right: 8px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function PensionSimulator() {
+            // State for inputs
+            const [productType, setProductType] = useState('פנסיה');
+            const [retirementAge, setRetirementAge] = useState(67);
+            const [currentAge, setCurrentAge] = useState(41);
+            const [currentSavings, setCurrentSavings] = useState(500000);
+            const [grossSalary, setGrossSalary] = useState(27000);
+            const [annualReturn, setAnnualReturn] = useState(4.25);
+            
+            // Contribution rates
+            const [severanceRate, setSeveranceRate] = useState(8.33);
+            const [employerRate, setEmployerRate] = useState(6.5);
+            const [employeeRate, setEmployeeRate] = useState(7);
+            
+            // Fees - Plan A (Current)
+            const [feesCumulativeA, setFeesCumulativeA] = useState(0.05);
+            const [feesDepositA, setFeesDepositA] = useState(0.9);
+            
+            // Fees - Plan B (Alternative)
+            const [feesCumulativeB, setFeesCumulativeB] = useState(0);
+            const [feesDepositB, setFeesDepositB] = useState(2.0);
+
+            // Calculate derived values
+            const monthsUntilRetirement = (retirementAge - currentAge) * 12;
+            const totalContributionRate = severanceRate + employerRate + employeeRate;
+            const monthlyDeposit = grossSalary * (totalContributionRate / 100);
+            const monthlyInterestRate = Math.pow((100 + annualReturn) / 100, 1/12) - 1;
+
+            // Calculate future value function
+            const calculateFV = (rate, nper, pmt, pv) => {
+                if (rate === 0) return -(pv + pmt * nper);
+                const pvif = Math.pow(1 + rate, nper);
+                return -(pv * pvif + pmt * (1 + rate) * (pvif - 1) / rate);
+            };
+
+            // Calculate savings without fees (baseline)
+            const totalSavingsNoFees = calculateFV(monthlyInterestRate, monthsUntilRetirement, monthlyDeposit, currentSavings);
+
+            // Calculate fees paid for Plan A
+            const calculateFeesA = () => {
+                let balance = currentSavings;
+                let totalFees = 0;
+                
+                for (let month = 0; month < monthsUntilRetirement; month++) {
+                    // Deposit fee
+                    const depositFee = monthlyDeposit * (feesDepositA / 100);
+                    totalFees += depositFee;
+                    
+                    // Add deposit after fee
+                    balance += monthlyDeposit;
+                    
+                    // Apply interest
+                    balance *= (1 + monthlyInterestRate);
+                    
+                    // Cumulative fee
+                    const cumulativeFee = balance * (feesCumulativeA / 100) / 12;
+                    totalFees += cumulativeFee;
+                    balance -= cumulativeFee;
+                }
+                
+                return { finalBalance: balance, totalFees };
+            };
+
+            // Calculate fees paid for Plan B
+            const calculateFeesB = () => {
+                let balance = currentSavings;
+                let totalFees = 0;
+                
+                for (let month = 0; month < monthsUntilRetirement; month++) {
+                    // Deposit fee
+                    const depositFee = monthlyDeposit * (feesDepositB / 100);
+                    totalFees += depositFee;
+                    
+                    // Add deposit after fee
+                    balance += monthlyDeposit;
+                    
+                    // Apply interest
+                    balance *= (1 + monthlyInterestRate);
+                    
+                    // Cumulative fee
+                    const cumulativeFee = balance * (feesCumulativeB / 100) / 12;
+                    totalFees += cumulativeFee;
+                    balance -= cumulativeFee;
+                }
+                
+                return { finalBalance: balance, totalFees };
+            };
+
+            const planA = calculateFeesA();
+            const planB = calculateFeesB();
+            const difference = planB.finalBalance - planA.finalBalance;
+            const percentageDifference = (difference / planA.finalBalance) * 100;
+
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('he-IL', {
+                    style: 'currency',
+                    currency: 'ILS',
+                    maximumFractionDigits: 0
+                }).format(amount);
+            };
+
+            const formatNumber = (num) => {
+                return new Intl.NumberFormat('he-IL').format(Math.round(num));
+            };
+
+            return (
+                <div className="container">
+                    <div className="header">
+                        <h1>🎯 סימולטור דמי ניהול פנסיה</h1>
+                        <p>השווה בין תוכניות פנסיה וראה כמה כסף תוכל לחסוך</p>
+                    </div>
+
+                    <div className="main-grid">
+                        {/* Input Panel */}
+                        <div className="card">
+                            <h2>📊 פרטים אישיים</h2>
+                            
+                            <div className="input-group">
+                                <label>סוג מוצר</label>
+                                <select value={productType} onChange={(e) => setProductType(e.target.value)}>
+                                    <option value="פנסיה">פנסיה</option>
+                                    <option value="השתלמות">השתלמות</option>
+                                </select>
+                            </div>
+
+                            <div className="input-row">
+                                <div className="input-group">
+                                    <label>גיל נוכחי</label>
+                                    <input 
+                                        type="number" 
+                                        value={currentAge}
+                                        onChange={(e) => setCurrentAge(Number(e.target.value))}
+                                        min="18"
+                                        max="67"
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>גיל פרישה</label>
+                                    <input 
+                                        type="number" 
+                                        value={retirementAge}
+                                        onChange={(e) => setRetirementAge(Number(e.target.value))}
+                                        min={currentAge + 1}
+                                        max="70"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="input-group">
+                                <label>סכום צבירה נוכחי (₪)</label>
+                                <input 
+                                    type="number" 
+                                    value={currentSavings}
+                                    onChange={(e) => setCurrentSavings(Number(e.target.value))}
+                                    step="10000"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>שכר ברוטו (₪)</label>
+                                <input 
+                                    type="number" 
+                                    value={grossSalary}
+                                    onChange={(e) => setGrossSalary(Number(e.target.value))}
+                                    step="1000"
+                                />
+                            </div>
+
+                            <h2 style={{marginTop: '25px'}}>💰 אחוזי הפרשה</h2>
+                            
+                            <div className="input-group">
+                                <label>פיצויים (%)</label>
+                                <input 
+                                    type="number" 
+                                    value={severanceRate}
+                                    onChange={(e) => setSeveranceRate(Number(e.target.value))}
+                                    step="0.1"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>מעביד (%)</label>
+                                <input 
+                                    type="number" 
+                                    value={employerRate}
+                                    onChange={(e) => setEmployerRate(Number(e.target.value))}
+                                    step="0.1"
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label>עובד/עצמאי (%)</label>
+                                <input 
+                                    type="number" 
+                                    value={employeeRate}
+                                    onChange={(e) => setEmployeeRate(Number(e.target.value))}
+                                    step="0.1"
+                                />
+                            </div>
+
+                            <div className="result-item" style={{marginTop: '15px'}}>
+                                <span className="result-label">סה"כ הפרשה:</span>
+                                <span className="result-value">{totalContributionRate.toFixed(2)}%</span>
+                            </div>
+
+                            <div className="input-group" style={{marginTop: '20px'}}>
+                                <label>תשואה שנתית צפויה (%)</label>
+                                <input 
+                                    type="number" 
+                                    value={annualReturn}
+                                    onChange={(e) => setAnnualReturn(Number(e.target.value))}
+                                    step="0.25"
+                                />
+                            </div>
+
+                            <div className="info-box">
+                                <strong>💡 מידע חשוב:</strong><br/>
+                                • הפקדה חודשית: {formatCurrency(monthlyDeposit)}<br/>
+                                • חודשים עד פרישה: {monthsUntilRetirement}<br/>
+                                • ריבית חודשית: {(monthlyInterestRate * 100).toFixed(3)}%
+                            </div>
+                        </div>
+
+                        {/* Results Panel */}
+                        <div>
+                            <div className="card">
+                                <h2>🔍 השוואת תוכניות</h2>
+                                
+                                <div className="fee-comparison">
+                                    {/* Plan A */}
+                                    <div className={`fee-card ${difference > 0 ? '' : 'better'}`}>
+                                        {difference <= 0 && <div className="badge">✓ המלצה</div>}
+                                        <h3>תוכנית א' (נוכחית)</h3>
+                                        
+                                        <div className="fee-inputs">
+                                            <label style={{fontSize: '0.9rem', marginBottom: '5px', display: 'block'}}>
+                                                דמי ניהול מצטבר (%)
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                value={feesCumulativeA}
+                                                onChange={(e) => setFeesCumulativeA(Number(e.target.value))}
+                                                step="0.01"
+                                            />
+                                            
+                                            <label style={{fontSize: '0.9rem', marginBottom: '5px', display: 'block', marginTop: '10px'}}>
+                                                דמי ניהול הפקדה (%)
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                value={feesDepositA}
+                                                onChange={(e) => setFeesDepositA(Number(e.target.value))}
+                                                step="0.1"
+                                            />
+                                        </div>
+
+                                        <div className="result-item">
+                                            <span className="result-label">חסכון צפוי:</span>
+                                            <span className="result-value">
+                                                {formatCurrency(planA.finalBalance)}
+                                            </span>
+                                        </div>
+
+                                        <div className="result-item">
+                                            <span className="result-label">דמי ניהול ששולמו:</span>
+                                            <span className="result-value negative">
+                                                {formatCurrency(planA.totalFees)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Plan B */}
+                                    <div className={`fee-card ${difference > 0 ? 'better' : ''}`}>
+                                        {difference > 0 && <div className="badge">✓ המלצה</div>}
+                                        <h3>תוכנית ב' (חלופית)</h3>
+                                        
+                                        <div className="fee-inputs">
+                                            <label style={{fontSize: '0.9rem', marginBottom: '5px', display: 'block'}}>
+                                                דמי ניהול מצטבר (%)
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                value={feesCumulativeB}
+                                                onChange={(e) => setFeesCumulativeB(Number(e.target.value))}
+                                                step="0.01"
+                                            />
+                                            
+                                            <label style={{fontSize: '0.9rem', marginBottom: '5px', display: 'block', marginTop: '10px'}}>
+                                                דמי ניהול הפקדה (%)
+                                            </label>
+                                            <input 
+                                                type="number" 
+                                                value={feesDepositB}
+                                                onChange={(e) => setFeesDepositB(Number(e.target.value))}
+                                                step="0.1"
+                                            />
+                                        </div>
+
+                                        <div className="result-item">
+                                            <span className="result-label">חסכון צפוי:</span>
+                                            <span className="result-value">
+                                                {formatCurrency(planB.finalBalance)}
+                                            </span>
+                                        </div>
+
+                                        <div className="result-item">
+                                            <span className="result-label">דמי ניהול ששולמו:</span>
+                                            <span className="result-value negative">
+                                                {formatCurrency(planB.totalFees)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="summary-card">
+                                    <h3>💎 הפער בין התוכניות</h3>
+                                    <div className="big-number" style={{color: difference > 0 ? '#10b981' : '#ef4444'}}>
+                                        {difference > 0 ? '+' : ''}{formatCurrency(Math.abs(difference))}
+                                    </div>
+                                    <p style={{fontSize: '1.1rem', color: '#2d3436'}}>
+                                        {difference > 0 ? (
+                                            <>
+                                                <span className="highlight">תוכנית ב'</span> תחסוך לך 
+                                                <span className="percentage-badge">{percentageDifference.toFixed(2)}%</span>
+                                                יותר כסף!
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="highlight">תוכנית א'</span> עדיפה ב-
+                                                <span className="percentage-badge">{Math.abs(percentageDifference).toFixed(2)}%</span>
+                                            </>
+                                        )}
+                                    </p>
+                                    <p style={{marginTop: '15px', fontSize: '0.95rem', color: '#636e72'}}>
+                                        הפער בדמי ניהול: {formatCurrency(Math.abs(planB.totalFees - planA.totalFees))}
+                                    </p>
+                                </div>
+
+                                <div className="info-box" style={{marginTop: '20px'}}>
+                                    <strong>📋 הנחות החישוב:</strong><br/>
+                                    1. הפקדות רציפות לאורך כל התקופה<br/>
+                                    2. תשואה קבועה של {annualReturn}% בשנה<br/>
+                                    3. שכר ואחוזי הפרשה קבועים<br/>
+                                    4. ללא התחשבות במיסוי בעת משיכה
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card">
+                        <h2>📞 רוצה ייעוץ מקצועי?</h2>
+                        <p style={{fontSize: '1.1rem', lineHeight: '1.8', color: '#555'}}>
+                            הסימולטור מספק הערכה כללית בלבד. לייעוץ מקצועי ומותאם אישית, 
+                            צור קשר עם <strong style={{color: '#667eea'}}>MORE Insurance Agency</strong>
+                        </p>
+                        <button onClick={() => window.location.href = 'https://more-ins.co.il'}>
+                            לפרטים נוספים 📱
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<PensionSimulator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
